@@ -58,6 +58,9 @@
 	<button id="clear">
             <span>C</span>lear
         </button>
+	<button id="flip">
+            Flip
+        </button>
     </div>
     <div id="overlay2">
         <div class="button-container">
@@ -69,6 +72,13 @@
         <img id="field" src="Basketball_court_fiba.svg" alt="Basketball Court" height=450> <!-- 15 * 30 -->
         <canvas id="overlay"></canvas>
     </div>
+
+
+
+
+
+
+
     <script>
         // Get the image and canvas elements
         var imgElement = document.getElementById('field');
@@ -107,12 +117,18 @@
 	var y;
         canvas.addEventListener('click', function(event) {
             var rect = imgElement.getBoundingClientRect();
-            x = event.clientX - rect.left;
-            y = event.clientY - rect.top;
+	    if (boolFlip) {
+                x = event.clientX - rect.left;
+                y = event.clientY - rect.top;
+                x = canvas.width - x;
+                y = canvas.height - y;
+	    } else {
+                x = event.clientX - rect.left;
+                y = event.clientY - rect.top;
+	    }
             
             // Add the coordinates and shot type to the list
 	    showOverlay(x,y);
-
         });
 
 	function showOverlay(x, y) {
@@ -133,8 +149,9 @@
             hideOverlay(); // Hide overlay when button is clicked
 
             // Add the coordinates and shot type to the list
-            shots.push({ x: x, y: y, type: shotType });
+            shots.push({ x: x, y: y, timestamp:0, type: shotType });
             drawCircle(x, y, shotType);
+	    console.log(x,y,shotType);
         }
 	document.addEventListener('keydown', function(event) {
             if (event.key.toLowerCase() === 'u') {
@@ -147,6 +164,7 @@
 	// Add click listener to the Undo button
         document.getElementById('undo').addEventListener('click', undoLastShot);
         document.getElementById('clear').addEventListener('click', clearShot);
+        document.getElementById('flip').addEventListener('click', flip);
 
         // Function to undo the last shot
         function undoLastShot() {
@@ -160,6 +178,22 @@
         function clearShot() {
 		shots = [];
 		redrawCircles();
+	}
+	var boolFlip = false
+        function flip() {
+		var image = document.getElementById('field');
+		var canvas = document.getElementById('overlay');
+		if (boolFlip) {
+                    image.style.transform = 'scaleX(1)';
+                    canvas.style.transform = 'scaleX(1)';
+                    image.style.transform = 'scaleY(1)';
+                    canvas.style.transform = 'scaleY(1)';
+		    boolFlip = false
+		 } else {
+		    image.style.transform = 'scaleX(-1) scaleY(-1)';
+		    canvas.style.transform = 'scaleX(-1) scaleY(-1)';
+		    boolFlip = true
+		 }
 	}
 
 
@@ -193,16 +227,24 @@
 	}
 
         function exportData() {
-	    var jsonData = JSON.stringify(shots, null, 2);
-            
-            // Create a Blob containing the JSON data
-            var blob = new Blob([jsonData], { type: 'application/json' });
-            
-            // Create a link element to trigger the download
-            var a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'data.json'; // Filename to download
-            a.click();
+	    let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "x,y,t,type\n"; // Header row
+
+            shots.forEach(function(shot) {
+		    var ind_shot = shot.shotType === "scored" ? "1" : "0";
+		    const row = `${shot.x/30},${shot.y/30},${shot.timestamp},"${ind_shot}"`;
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "shots_data.csv");
+            document.body.appendChild(link); // Required for FF
+
+            link.click();
+            document.body.removeChild(link);
+
         }
 
     </script>

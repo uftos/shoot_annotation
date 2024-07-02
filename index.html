@@ -153,6 +153,7 @@
             shots.push({ x: x, y: y, timestamp: acc, type: shotType });
             drawCircle(x, y, shotType);
 	    console.log(x,y,shotType);
+	    acc = acc + 1;
         }
 	document.addEventListener('keydown', function(event) {
             if (event.key.toLowerCase() === 'u') {

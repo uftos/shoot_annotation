@@ -16,6 +16,26 @@
             top: 0;
             left: 0;
         }
+	#overlay2 {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100px;
+            height: 100px;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .button-container {
+            display: flex;
+            gap: 20px;
+        }
+        .button-container button {
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+        }
 	label span {
             text-decoration: underline;
         }
@@ -27,25 +47,23 @@
     </style>
 </head>
 <body>
-    <div id="button-container">
+    <div id="button-container2">
         <button onclick="importData()">Import</button>
         <button onclick="exportData()">Export</button>
     </div>
     <div id="radio-buttons">
-        <label>
-            <input type="radio" name="shot" id="missed" value="missed">
-            <span>M</span>issed
-        </label>
-        <label>
-            <input type="radio" name="shot" id="scored" value="scored" checked>
-            <span>S</span>cored
-        </label>
 	<button id="undo">
             <span>U</span>ndo
         </button>
 	<button id="clear">
             <span>C</span>lear
         </button>
+    </div>
+    <div id="overlay2">
+        <div class="button-container">
+            <button onclick="recordShot('missed')">Missed</button>
+            <button onclick="recordShot('scored')">Scored</button>
+        </div>
     </div>
     <div id="container">
         <img id="field" src="Basketball_court_fiba.svg" alt="Basketball Court" height=450> <!-- 15 * 30 -->
@@ -85,26 +103,41 @@
         }
 
         // Add click listener to the image
+	var x;
+	var y;
         canvas.addEventListener('click', function(event) {
             var rect = imgElement.getBoundingClientRect();
-            var x = event.clientX - rect.left;
-            var y = event.clientY - rect.top;
-            var shotType = document.querySelector('input[name="shot"]:checked').value;
-            drawCircle(x, y, shotType);
-
-	    // Determine which radio button is selected
+            x = event.clientX - rect.left;
+            y = event.clientY - rect.top;
             
             // Add the coordinates and shot type to the list
-		console.log(x,y)
-            shots.push({x: x, y: y, type: shotType});
+	    showOverlay(x,y);
 
         });
+
+	function showOverlay(x, y) {
+            var overlay = document.getElementById('overlay2');
+            overlay.style.display = 'flex'; // Display the overlay
+
+            // Position overlay at the click location
+            overlay.style.top = y + 'px';
+            overlay.style.left = x + 'px';
+        }
+
+        function hideOverlay() {
+            var overlay = document.getElementById('overlay2');
+            overlay.style.display = 'none'; // Hide the overlay
+        }
+
+        function recordShot(shotType) {
+            hideOverlay(); // Hide overlay when button is clicked
+
+            // Add the coordinates and shot type to the list
+            shots.push({ x: x, y: y, type: shotType });
+            drawCircle(x, y, shotType);
+        }
 	document.addEventListener('keydown', function(event) {
-            if (event.key.toLowerCase() === 'm') {
-                document.getElementById('missed').checked = true;
-            } else if (event.key.toLowerCase() === 's') {
-                document.getElementById('scored').checked = true;
-            } else if (event.key.toLowerCase() === 'u') {
+            if (event.key.toLowerCase() === 'u') {
                 undoLastShot();
             } else if (event.key.toLowerCase() === 'c') {
                 clearShot();

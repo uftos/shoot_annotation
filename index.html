@@ -85,6 +85,7 @@
         var canvas = document.getElementById('overlay');
         var ctx = canvas.getContext('2d');
 	var shots = [];
+	var acc = 0;
 
         // Set the canvas size to match the image
         imgElement.onload = function() {
@@ -149,7 +150,7 @@
             hideOverlay(); // Hide overlay when button is clicked
 
             // Add the coordinates and shot type to the list
-            shots.push({ x: x, y: y, timestamp:0, type: shotType });
+            shots.push({ x: x, y: y, timestamp: acc, type: shotType });
             drawCircle(x, y, shotType);
 	    console.log(x,y,shotType);
         }
@@ -231,7 +232,7 @@
             csvContent += "x,y,t,type\n"; // Header row
 
             shots.forEach(function(shot) {
-		    var ind_shot = shot.shotType === "scored" ? "1" : "0";
+		    var ind_shot = shot.type === "scored" ? "1" : "0";
 		    const row = `${shot.x/30},${shot.y/30},${shot.timestamp},"${ind_shot}"`;
                 csvContent += row + "\n";
             });

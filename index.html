@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Draw Circle on Image Click</title>
+    <style>
+        #container {
+            position: relative;
+        }
+        #field {
+            display: block;
+        }
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+	label span {
+            text-decoration: underline;
+        }
+	button span {
+            text-decoration: underline;
+        }
+
+
+    </style>
+</head>
+<body>
+    <div id="button-container">
+        <button onclick="importData()">Import</button>
+        <button onclick="exportData()">Export</button>
+    </div>
+    <div id="radio-buttons">
+        <label>
+            <input type="radio" name="shot" id="missed" value="missed">
+            <span>M</span>issed
+        </label>
+        <label>
+            <input type="radio" name="shot" id="scored" value="scored" checked>
+            <span>S</span>cored
+        </label>
+	<button id="undo">
+            <span>U</span>ndo
+        </button>
+	<button id="clear">
+            <span>C</span>lear
+        </button>
+    </div>
+    <div id="container">
+        <img id="field" src="Basketball_court_fiba.svg" alt="Basketball Court" height=450> <!-- 15 * 30 -->
+        <canvas id="overlay"></canvas>
+    </div>
+    <script>
+        // Get the image and canvas elements
+        var imgElement = document.getElementById('field');
+        var canvas = document.getElementById('overlay');
+        var ctx = canvas.getContext('2d');
+	var shots = [];
+
+        // Set the canvas size to match the image
+        imgElement.onload = function() {
+            canvas.width = imgElement.width;
+            canvas.height = imgElement.height;
+        }
+
+        // Function to draw a circle at the specified position
+        function drawCircle(x, y, shotType) {
+            var radius = 2;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2, true);
+	    ctx.fillStyle = shotType === "scored" ? "green" : "red";
+	    ctx.fill();
+            //ctx.strokeStyle = shotType === "scored" ? "green" : "red";
+            //ctx.lineWidth = 2;
+            //ctx.stroke();
+        }
+
+	// Function to redraw all circles
+        function redrawCircles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            shots.forEach(function(shot) {
+                drawCircle(shot.x, shot.y, shot.type);
+            });
+        }
+
+        // Add click listener to the image
+        canvas.addEventListener('click', function(event) {
+            var rect = imgElement.getBoundingClientRect();
+            var x = event.clientX - rect.left;
+            var y = event.clientY - rect.top;
+            var shotType = document.querySelector('input[name="shot"]:checked').value;
+            drawCircle(x, y, shotType);
+
+	    // Determine which radio button is selected
+            
+            // Add the coordinates and shot type to the list
+		console.log(x,y)
+            shots.push({x: x, y: y, type: shotType});
+
+        });
+	document.addEventListener('keydown', function(event) {
+            if (event.key.toLowerCase() === 'm') {
+                document.getElementById('missed').checked = true;
+            } else if (event.key.toLowerCase() === 's') {
+                document.getElementById('scored').checked = true;
+            } else if (event.key.toLowerCase() === 'u') {
+                undoLastShot();
+            } else if (event.key.toLowerCase() === 'c') {
+                clearShot();
+	    }
+        });
+	
+	// Add click listener to the Undo button
+        document.getElementById('undo').addEventListener('click', undoLastShot);
+        document.getElementById('clear').addEventListener('click', clearShot);
+
+        // Function to undo the last shot
+        function undoLastShot() {
+            if (shots.length > 0) {
+                shots.pop();
+                redrawCircles();
+                console.log('Undo last shot:', shots);
+            }
+        }
+
+        function clearShot() {
+		shots = [];
+		redrawCircles();
+	}
+
+
+	function importData() {
+            var input = document.createElement('input');
+            input.type = 'file';
+            input.click();
+	    input.onchange = e => { 
+    	      var file = e.target.files[0]; 
+              if (file) {
+                  var reader = new FileReader();
+                  reader.readAsText(file, 'UTF-8');
+                  reader.onload = function(evt) {
+                      try {
+                          shots = JSON.parse(evt.target.result);
+	          	    redrawCircles();
+                          console.log('Imported data:', shots);
+                          // Handle or process the imported data here
+                      } catch (e) {
+                          console.error('Error parsing JSON:', e);
+                      }
+                  };
+                  reader.onerror = function(evt) {
+                      console.error('Error reading file:', evt.target.error);
+                  };
+              } else {
+                  console.error('No file selected');
+              }
+
+            }
+	}
+
+        function exportData() {
+	    var jsonData = JSON.stringify(shots, null, 2);
+            
+            // Create a Blob containing the JSON data
+            var blob = new Blob([jsonData], { type: 'application/json' });
+            
+            // Create a link element to trigger the download
+            var a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'data.json'; // Filename to download
+            a.click();
+        }
+
+    </script>
+</body>
+</html>
+

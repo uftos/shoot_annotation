@@ -43,10 +43,16 @@
             text-decoration: underline;
         }
 
+	#root {
+		display:flex;
+	}
+
 
     </style>
 </head>
 <body>
+ <div id="root">
+  <div id="annotation">
     <div id="button-container2">
         <button onclick="importData()">Import</button>
         <button onclick="exportData()">Export</button>
@@ -72,7 +78,28 @@
         <img id="field" src="Basketball_court_fiba.svg" alt="Basketball Court" height=450> <!-- 15 * 30 -->
         <canvas id="overlay"></canvas>
     </div>
+  </div>
 
+
+    <div id='videoContainer'>
+    <div>
+    <input type="file" id="videoInput" accept="video/*" onchange="loadVideo(event)">
+    </div>
+    
+    <video id="myVideo" width="1000" controls>
+        <source id="videoSource" src="" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <div id="video-controls">
+        <button onclick="playVideo()">Play</button>
+        <button onclick="pauseVideo()">Pause</button>
+        <button onclick="stopVideo()">Stop</button>
+        <button onclick="accelerateVideo()">Accelerate</button>
+        <button onclick="decelerateVideo()">Decelerate</button>
+    </div>
+    </div>
+ </div>
 
 
 
@@ -85,7 +112,6 @@
         var canvas = document.getElementById('overlay');
         var ctx = canvas.getContext('2d');
 	var shots = [];
-	var acc = 0;
 
         // Set the canvas size to match the image
         imgElement.onload = function() {
@@ -157,10 +183,10 @@
 
             // Add the coordinates and shot success to the list
 
-            shots.push({ x: x, y: y, timestamp: acc, success: shotType });
+		console.log(video.currentTime)
+            shots.push({ x: x, y: y, timestamp: video.currentTime, success: shotType });
             drawCircle(x, y, shotType);
 	    console.log(x,y,shotType);
-	    acc = acc + 1;
         }
 	document.addEventListener('keydown', function(event) {
             if (event.key.toLowerCase() === 'u') {
@@ -271,6 +297,36 @@
             link.click();
             document.body.removeChild(link);
 
+        }
+
+	var video = document.getElementById("myVideo");
+        var videoSource = document.getElementById("videoSource");
+
+        function loadVideo(event) {
+            var file = event.target.files[0];
+            var fileURL = URL.createObjectURL(file);
+            videoSource.src = fileURL;
+            video.load();
+        }
+
+        function playVideo() {
+            video.play();
+        }
+
+        function pauseVideo() {
+            video.pause();
+        }
+
+        function stopVideo() {
+            video.pause();
+            video.currentTime = 0;
+        }
+
+        function accelerateVideo() {
+            video.playbackRate += 0.5;
+        }
+        function decelerateVideo() {
+            video.playbackRate -= 0.5;
         }
 
     </script>

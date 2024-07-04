@@ -142,10 +142,12 @@
         // Add click listener to the image
 	var x;
 	var y;
+	var t;
 	var overlay_x;
 	var oberlay_y;
         canvas.addEventListener('click', function(event) {
             var rect = imgElement.getBoundingClientRect();
+	    t = video.currentTime
 	    if (boolFlip) {
                 x = event.clientX - rect.left;
                 y = event.clientY - rect.top;
@@ -183,8 +185,7 @@
 
             // Add the coordinates and shot success to the list
 
-		console.log(video.currentTime)
-            shots.push({ x: x, y: y, timestamp: video.currentTime, success: shotType });
+            shots.push({ x: x, y: y, timestamp: t, success: shotType });
             drawCircle(x, y, shotType);
 	    console.log(x,y,shotType);
         }

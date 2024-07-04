@@ -109,27 +109,33 @@
         function redrawCircles() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             shots.forEach(function(shot) {
-                drawCircle(shot.x, shot.y, shot.type);
+                drawCircle(shot.x, shot.y, shot.success);
             });
         }
 
         // Add click listener to the image
 	var x;
 	var y;
+	var overlay_x;
+	var oberlay_y;
         canvas.addEventListener('click', function(event) {
             var rect = imgElement.getBoundingClientRect();
 	    if (boolFlip) {
                 x = event.clientX - rect.left;
                 y = event.clientY - rect.top;
+		overlay_x = x;
+		overlay_y = y;
                 x = canvas.width - x;
                 y = canvas.height - y;
 	    } else {
                 x = event.clientX - rect.left;
                 y = event.clientY - rect.top;
+		overlay_x = x;
+		overlay_y = y;
 	    }
             
-            // Add the coordinates and shot type to the list
-	    showOverlay(x,y);
+            // Add the coordinates and shot success to the list
+	    showOverlay(overlay_x,overlay_y);
         });
 
 	function showOverlay(x, y) {
@@ -149,8 +155,9 @@
         function recordShot(shotType) {
             hideOverlay(); // Hide overlay when button is clicked
 
-            // Add the coordinates and shot type to the list
-            shots.push({ x: x, y: y, timestamp: acc, type: shotType });
+            // Add the coordinates and shot success to the list
+
+            shots.push({ x: x, y: y, timestamp: acc, success: shotType });
             drawCircle(x, y, shotType);
 	    console.log(x,y,shotType);
 	    acc = acc + 1;
@@ -209,14 +216,31 @@
                   var reader = new FileReader();
                   reader.readAsText(file, 'UTF-8');
                   reader.onload = function(evt) {
-                      try {
-                          shots = JSON.parse(evt.target.result);
-	          	    redrawCircles();
-                          console.log('Imported data:', shots);
-                          // Handle or process the imported data here
-                      } catch (e) {
-                          console.error('Error parsing JSON:', e);
-                      }
+                            let lines = evt.target.result.trim().split("\n");
+			    let headers = lines[0].split(",");
+			    shots = [];
+
+			    for (let i = 1; i < lines.length; i++) {
+				let row = lines[i].split(",");
+				let obj = {};
+				for (let j = 0; j < headers.length; j++) {
+				    let key = headers[j];
+				    let value = row[j];
+
+				    // Convert values back to their appropriate successs
+				    if (key === "x" || key === "y") {
+					obj[key] = parseFloat(value) * 30;
+				    } else if (key === "timestamp") {
+					obj[key] = value;
+				    } else if (key === "success") {
+					obj[key] = value === "1" ? "scored" : "missed";
+				    } else {
+					obj[key] = value;
+				    }
+				}
+				shots.push(obj);
+			    }
+			redrawCircles();
                   };
                   reader.onerror = function(evt) {
                       console.error('Error reading file:', evt.target.error);
@@ -230,10 +254,10 @@
 
         function exportData() {
 	    let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "x,y,t,type\n"; // Header row
+            csvContent += "x,y,timestamp,success\n"; // Header row
 
             shots.forEach(function(shot) {
-		    var ind_shot = shot.type === "scored" ? "1" : "0";
+		    var ind_shot = shot.success === "scored" ? "1" : "0";
 		    const row = `${shot.x/30},${shot.y/30},${shot.timestamp},"${ind_shot}"`;
                 csvContent += row + "\n";
             });

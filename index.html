@@ -120,8 +120,13 @@
         }
 
         // Function to draw a circle at the specified position
-        function drawCircle(x, y, shotType) {
-            var radius = 2;
+        function drawCircle(x, y, shotType, three_point) {
+	    if (three_point){
+                var radius = 6;
+	    }
+	    else{
+		var radius = 2;
+	    }
             ctx.beginPath();
             ctx.arc(x, y, radius, 0, Math.PI * 2, true);
 	    ctx.fillStyle = shotType === "scored" ? "green" : "red";
@@ -135,7 +140,7 @@
         function redrawCircles() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             shots.forEach(function(shot) {
-                drawCircle(shot.x, shot.y, shot.success);
+                drawCircle(shot.x, shot.y, shot.success, shot.three_point);
             });
         }
 
@@ -183,10 +188,10 @@
         function recordShot(shotType) {
             hideOverlay(); // Hide overlay when button is clicked
 
-            // Add the coordinates and shot success to the list
-
-            shots.push({ x: x, y: y, timestamp: t, success: shotType });
-            drawCircle(x, y, shotType);
+	    three_point = determineShotType({x:x,y:y})
+		console.log(three_point);
+            shots.push({ x: x, y: y, timestamp: t, success: shotType, three_point: three_point});
+            drawCircle(x, y, shotType, three_point);
 	    console.log(x,y,shotType);
         }
 	document.addEventListener('keydown', function(event) {
@@ -240,35 +245,24 @@
 	    input.onchange = e => { 
     	      var file = e.target.files[0]; 
               if (file) {
-                  var reader = new FileReader();
-                  reader.readAsText(file, 'UTF-8');
-                  reader.onload = function(evt) {
-                            let lines = evt.target.result.trim().split("\n");
-			    let headers = lines[0].split(",");
-			    shots = [];
-
-			    for (let i = 1; i < lines.length; i++) {
-				let row = lines[i].split(",");
-				let obj = {};
-				for (let j = 0; j < headers.length; j++) {
-				    let key = headers[j];
-				    let value = row[j];
-
-				    // Convert values back to their appropriate successs
-				    if (key === "x" || key === "y") {
-					obj[key] = parseFloat(value) * 30;
-				    } else if (key === "timestamp") {
-					obj[key] = value;
-				    } else if (key === "success") {
-					obj[key] = value === "1" ? "scored" : "missed";
-				    } else {
-					obj[key] = value;
-				    }
-				}
-				shots.push(obj);
+		      const reader = new FileReader();
+		      reader.readAsText(file, 'UTF-8');
+		      reader.onload = (evt) => {
+			let lines = evt.target.result.trim().split('\n').slice(1);
+			shots = (lines ?? [])
+			  .map((line) => line?.replace(/"/g, '')?.split(',') ?? [])
+			  .map(([x, y, timestamp, success, three_point]) => {
+			    console.log(success);
+			    return {
+			      x: parseFloat(x) * 30,
+			      y: parseFloat(y) * 30,
+			      timestamp,
+			      success: success === '1' ? 'scored' : 'missed',
+			      three_point: three_point === 'true',
 			    }
+			  });
 			redrawCircles();
-                  };
+		      }
                   reader.onerror = function(evt) {
                       console.error('Error reading file:', evt.target.error);
                   };
@@ -281,11 +275,11 @@
 
         function exportData() {
 	    let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "x,y,timestamp,success\n"; // Header row
+            csvContent += "x,y,timestamp,success,three_point\n"; // Header row
 
             shots.forEach(function(shot) {
 		    var ind_shot = shot.success === "scored" ? "1" : "0";
-		    const row = `${shot.x/30},${shot.y/30},${shot.timestamp},"${ind_shot}"`;
+		    const row = `${shot.x/30},${shot.y/30},${shot.timestamp},"${ind_shot}",${shot.three_point}`;
                 csvContent += row + "\n";
             });
 
@@ -329,6 +323,31 @@
         function decelerateVideo() {
             video.playbackRate -= 0.5;
         }
+
+	// Coordinates of the basketball hoop (assuming origin (0, 0))
+	const hoopX = 1.575;
+	const hoopY = 7.5;
+
+	// Function to calculate the distance between two points
+	function calculateDistance(x1, y1, x2, y2) {
+	  return Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+	}
+
+
+	const threePointArcDistance = 6.75; 
+	const straightLineX = 6.7; // Distance for the straight lines in feet
+	const yArcLimit = 4.26; // The y-coordinate where the arc ends and straight lines start
+	function determineShotType(shot) {
+	    const distance = calculateDistance(shot.x/30, shot.y/30, hoopX, hoopY);
+	    if (Math.abs(shot.x/30) > straightLineX && shot.y/30 <= yArcLimit) {
+	      return true;
+	    } else if (distance > threePointArcDistance) {
+	      return true;
+	    } else {
+	      return false;
+	    }
+}
+
 
     </script>
 </body>
